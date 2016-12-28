@@ -4,6 +4,7 @@ var path = require('path');
 var crypto = require ('crypto');
 var Pool = require('pg').Pool;
 var bodyParser = require('body-parser');
+var session = require('express-session');
 
 var config - {
     user:'rohitkanyal',
@@ -16,6 +17,10 @@ var config - {
 var app = express();
 app.use(morgan('combined'));
 app.use(bodyParser.json());
+app.use(session({
+    secret:'someRandomsecretValue',
+    cookie:{maxAge:1000*60*60*24*30}
+}));
 
 app.get('/', function (req, res) {
   res.sendFile(path.join(__dirname, 'ui', 'index.html'));
@@ -60,34 +65,39 @@ app.post('/login',function(req,res){
    pool.query('SELECT * from "user" WHERE  username = $1',[username], function(err,result){
       if(err){
        res.status(500).send(err.toString());
-   } else{
-       if (result.rows.length ===0){
+         } else{
+          if (result.rows.length ===0){
            res.send(403).send('username/password is invalid');
-       }else{
+          }else{
            //Match the password
            var dbString =result.rows[0].password;
            var salt = dbString.split('$')[2];
            var hashedPassword = hash(password,salt);//creating hash based on password  submitted and the original salt
            if (hashedPassword ===dbString){
+           
+           // Set the sessionn id
+           req.session.auth ={userId:result.rows[0].id};
+           //set cookies m onthe server silde it maps
+               
            res.send('Credentials correct');
            
-             //SET A SESSION
-               
-           else{
+           }else{
                res.send(403).send('username/password is invalid');
            }
                
-           }
+           
        }
       
-   }   
-});
+   }
 
 
-var counter =0;
-app.get('/counter',function(req,res){
-    counter = counter + 1;
-    res.send(counter.toString());
+
+app.get('/check-login',function (req,res)){
+    if (req.session && req.session.outh && req.sesion.auth.userId){
+        res.send('you are logged in:' + req.session.auth.userId.toString());
+    }else{
+        res.send('you are not logged in');
+    }
 });
 
 var pool = new Pool(config)
