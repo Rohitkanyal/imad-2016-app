@@ -37,6 +37,7 @@ app.get('/hash/:iput',function(req,res){
 
 app.post('/create-user',function(req,res){
    //usrname,password
+   //{"username": "rohit","password":"password"}
    //JSON
    var username =req.body.username;
    var password =req.body.password;
